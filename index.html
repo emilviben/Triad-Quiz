@@ -74,10 +74,14 @@ font-family: ui-monospace, ‘SF Mono’, Menlo, monospace;
 min-height: 100vh;
 min-height: -webkit-fill-available;
 height: 100%;
+display: -webkit-flex;
 display: flex;
+-webkit-flex-direction: column;
 flex-direction: column;
 overflow-x: hidden;
-padding-bottom: env(safe-area-inset-bottom);
+overflow-y: auto;
+padding-bottom: 32px;
+-webkit-overflow-scrolling: touch;
 }
 
 html { height: -webkit-fill-available; }
@@ -125,11 +129,12 @@ transition: all 0.15s;
 /* Settings overlay */
 .settings-overlay {
 position: fixed;
-inset: 0;
+top: 0; left: 0; right: 0; bottom: 0;
 background: rgba(0,0,0,0.5);
-z-index: 100;
+z-index: 9998;
 opacity: 0;
 pointer-events: none;
+-webkit-transition: opacity 0.25s;
 transition: opacity 0.25s;
 }
 .settings-overlay.open {
@@ -144,14 +149,20 @@ bottom: 0; left: 0; right: 0;
 background: var(–surface);
 border-radius: 16px 16px 0 0;
 border-top: 1px solid var(–border);
-z-index: 101;
-padding: 0 0 env(safe-area-inset-bottom);
+z-index: 9999;
+padding: 0 0 32px;
+-webkit-transform: translateY(100%);
 transform: translateY(100%);
+-webkit-transition: -webkit-transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-max-height: 85vh;
+max-height: 80vh;
 overflow-y: auto;
+-webkit-overflow-scrolling: touch;
 }
-.settings-sheet.open { transform: translateY(0); }
+.settings-sheet.open {
+-webkit-transform: translateY(0);
+transform: translateY(0);
+}
 
 .sheet-handle {
 width: 36px; height: 4px;
@@ -1339,10 +1350,12 @@ const settingsOverlay = document.getElementById('settingsOverlay');
 function openSettings() {
   settingsSheet.classList.add('open');
   settingsOverlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 function closeSettings() {
   settingsSheet.classList.remove('open');
   settingsOverlay.classList.remove('open');
+  document.body.style.overflow = '';
 }
 settingsBtn.addEventListener('click', openSettings);
 settingsOverlay.addEventListener('click', closeSettings);
