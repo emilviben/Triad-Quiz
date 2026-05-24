@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Triad Quiz">
+<title>Triad Quiz</title>
+<style>
+  :root {
+    --bg: #0e0e0f;
+    --surface: #1a1a1c;
+    --surface2: #242428;
+    --border: #2e2e34;
+    --accent: #d4a847;
+    --accent2: #7b9e6b;
+    --red: #c0544a;
+    --text: #e8e4dc;
+    --muted: #7a7870;
+    --dot-root: #d4a847;
+    --dot-third: #d4a847;
+    --dot-fifth: #d4a847;
+    --string-color: #3a3830;
+    --fret-color: #2a2a2e;
+    --nut: #c8b87a;
+  }
+
+body.light {
+–bg: #f5f0e8;
+–surface: #ede7d9;
+–surface2: #e4ddd0;
+–border: #cec6b5;
+–accent: #b8860b;
+–accent2: #4a7c3f;
+–red: #a03530;
+–text: #2a2520;
+–muted: #8a806e;
+–dot-root: #c49a0e;
+–dot-third: #c49a0e;
+–dot-fifth: #c49a0e;
+–fret-color: #c8bfaa;
+–nut: #a09060;
+}
+
+body.light .fretboard {
+background: #d4c9a8;
+border-color: #b8a882;
+}
+
+body.light .string-row {
+border-bottom-color: #c0b490;
+}
+
+body.light .string-row::after {
+background: linear-gradient(90deg, #a09060 0%, #8a7850 20%, #6e6040 100%);
+}
+
+body.light .string-row:nth-child(1)::after {
+background: linear-gradient(90deg, #a09060 0%, #907850 100%);
+}
+
+body.light .fret-inlay {
+background: #b8a87a;
+}
+
+- { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+background: var(–bg);
+color: var(–text);
+font-family: ui-monospace, ‘SF Mono’, Menlo, monospace;
+min-height: 100vh;
+min-height: -webkit-fill-available;
+height: 100%;
+display: flex;
+flex-direction: column;
+overflow-x: hidden;
+padding-bottom: env(safe-area-inset-bottom);
+}
+
+html { height: -webkit-fill-available; }
+
+header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 16px 18px 10px;
+border-bottom: 1px solid var(–border);
+background: var(–bg);
+}
+
+.title {
+font-family: Georgia, ‘Times New Roman’, serif;
+font-size: 20px;
+font-weight: 900;
+letter-spacing: -0.5px;
+color: var(–text);
+}
+.title span { color: var(–accent); }
+
+.score-badge {
+font-size: 11px;
+color: var(–muted);
+letter-spacing: 0.05em;
+text-align: right;
+}
+.score-badge strong { color: var(–accent); font-size: 15px; display: block; }
+
+/* Settings button */
+.settings-btn {
+background: none;
+border: 1px solid var(–border);
+color: var(–muted);
+width: 34px; height: 34px;
+border-radius: 8px;
+cursor: pointer;
+font-size: 16px;
+display: flex; align-items: center; justify-content: center;
+transition: all 0.15s;
+}
+.settings-btn:active { background: var(–surface2); }
+
+/* Settings overlay */
+.settings-overlay {
+position: fixed;
+inset: 0;
+background: rgba(0,0,0,0.5);
+z-index: 100;
+opacity: 0;
+pointer-events: none;
+transition: opacity 0.25s;
+}
+.settings-overlay.open {
+opacity: 1;
+pointer-events: all;
+}
+
+/* Settings sheet */
+.settings-sheet {
+position: fixed;
+bottom: 0; left: 0; right: 0;
+background: var(–surface);
+border-radius: 16px 16px 0 0;
+border-top: 1px solid var(–border);
+z-index: 101;
+padding: 0 0 env(safe-area-inset-bottom);
+transform: translateY(100%);
+transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+max-height: 85vh;
+overflow-y: auto;
+}
+.settings-sheet.open { transform: translateY(0); }
+
+.sheet-handle {
+width: 36px; height: 4px;
+background: var(–border);
+border-radius: 2px;
+margin: 10px auto 0;
+}
+
+.sheet-title {
+font-family: Georgia, ‘Times New Roman’, serif;
+font-size: 16px;
+font-weight: 700;
+padding: 14px 20px 10px;
+color: var(–text);
+border-bottom: 1px solid var(–border);
+}
+
+.sheet-section {
+padding: 14px 20px 4px;
+}
+.sheet-section-label {
+font-size: 9px;
+letter-spacing: 0.12em;
+text-transform: uppercase;
+color: var(–muted);
+margin-bottom: 10px;
+}
+
+.sheet-row {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 10px 0;
+border-bottom: 1px solid var(–border);
+}
+.sheet-row:last-child { border-bottom: none; }
+
+.sheet-row-label {
+font-size: 13px;
+color: var(–text);
+letter-spacing: 0.02em;
+}
+.sheet-row-sub {
+font-size: 10px;
+color: var(–muted);
+margin-top: 1px;
+}
+
+/* Chord type pills */
+.chord-pills {
+display: flex;
+gap: 8px;
+flex-wrap: wrap;
+padding: 4px 0 14px;
+}
+.chord-pill {
+padding: 7px 14px;
+border-radius: 20px;
+border: 1px solid var(–border);
+background: var(–surface2);
+color: var(–muted);
+font-family: ui-monospace, ‘SF Mono’, Menlo, monospace;
+font-size: 13px;
+cursor: pointer;
+transition: all 0.15s;
+user-select: none;
+}
+.chord-pill.active {
+border-color: var(–accent);
+background: rgba(212,168,71,0.12);
+color: var(–accent);
+}
+.chord-pill:active { transform: scale(0.95); }
+
+.toggle-switch {
+position: relative;
+width: 42px;
+height: 24px;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+position: absolute; cursor: pointer;
+top: 0; left: 0; right: 0; bottom: 0;
+background: var(–border);
+border-radius: 24px;
+transition: 0.3s;
+}
+.slider:before {
+content: ‘’;
+position: absolute;
+width: 18px; height: 18px;
+left: 3px; top: 3px;
+background: var(–muted);
+border-radius: 50%;
+transition: 0.3s;
+}
+input:checked + .slider { background: var(–accent); }
+input:checked + .slider:before { transform: translateX(18px); background: var(–bg); }
+
+.label-hint {
+color: var(–accent);
+font-weight: 500;
+}
+
+/* Fretboard area */
+.fretboard-wrap {
+flex: 1;
+min-height: 280px;
+padding: 14px 10px 6px;
+overflow-x: auto;
+-webkit-overflow-scrolling: touch;
+}
+
+.fretboard-container {
+position: relative;
+min-width: 680px;
+width: 100%;
+}
+
+.fret-markers {
+display: flex;
+padding-left: 38px;
+margin-bottom: 4px;
+height: 14px;
+align-items: center;
+}
+.fret-marker-cell {
+flex: 1;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 3px;
+}
+.fret-marker-dot {
+width: 6px; height: 6px;
+border-radius: 50%;
+background: var(–muted);
+opacity: 0.5;
+flex-shrink: 0;
+}
+body.light .fret-marker-dot { background: var(–muted); opacity: 0.4; }
+
+.fretboard {
+position: relative;
+background: #1c1810;
+border-radius: 4px;
+overflow: hidden;
+border: 1px solid #3a3020;
+}
+
+.string-row {
+display: flex;
+align-items: center;
+height: 44px;
+position: relative;
+border-bottom: 1px solid #2a2218;
+}
+.string-row:last-child { border-bottom: none; }
+
+.string-label {
+width: 38px;
+text-align: center;
+font-size: 11px;
+color: var(–muted);
+flex-shrink: 0;
+z-index: 2;
+position: relative;
+font-weight: 500;
+}
+
+.frets {
+display: flex;
+flex: 1;
+height: 100%;
+position: relative;
+}
+
+/* Horizontal string line */
+.string-row::after {
+content: ‘’;
+position: absolute;
+left: 38px;
+right: 0;
+top: 50%;
+height: 1.5px;
+background: linear-gradient(90deg, var(–nut) 0%, #8a8070 20%, #6a6058 100%);
+transform: translateY(-50%);
+z-index: 1;
+pointer-events: none;
+}
+
+/* Thicker strings for lower strings */
+.string-row:nth-child(1)::after { height: 1px; background: linear-gradient(90deg, var(–nut) 0%, #aaa090 100%); }
+.string-row:nth-child(2)::after { height: 1.5px; }
+.string-row:nth-child(3)::after { height: 1.5px; }
+.string-row:nth-child(4)::after { height: 2px; }
+.string-row:nth-child(5)::after { height: 2.5px; }
+.string-row:nth-child(6)::after { height: 3px; }
+
+.fret-cell {
+flex: 1;
+height: 100%;
+position: relative;
+border-right: 2px solid var(–fret-color);
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 2;
+}
+.fret-cell:last-child { border-right: none; }
+
+/* Fret inlay dots (on middle string) — hidden, markers now above */
+.fret-inlay { display: none; }
+
+/* Note dot */
+.note-dot {
+width: 30px; height: 30px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 10px;
+font-weight: 500;
+font-family: ui-monospace, ‘SF Mono’, Menlo, monospace;
+z-index: 3;
+position: relative;
+transition: transform 0.15s, opacity 0.3s;
+box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+letter-spacing: 0;
+animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes popIn {
+from { transform: scale(0); opacity: 0; }
+to { transform: scale(1); opacity: 1; }
+}
+
+.dot-root, .dot-third, .dot-fifth { background: var(–dot-root); color: #1a1200; }
+
+/* Inlay marks on fretboard at correct frets */
+.inlay-row { /* handled per cell */ }
+
+/* Quiz section */
+.quiz-panel {
+background: var(–surface);
+border-top: 1px solid var(–border);
+padding: 14px 18px;
+}
+
+.question-label {
+font-size: 10px;
+color: var(–muted);
+letter-spacing: 0.1em;
+text-transform: uppercase;
+margin-bottom: 10px;
+}
+
+.answer-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 10px;
+margin-bottom: 12px;
+}
+
+.answer-section label {
+font-size: 10px;
+color: var(–muted);
+letter-spacing: 0.08em;
+text-transform: uppercase;
+display: block;
+margin-bottom: 6px;
+}
+
+.btn-group {
+display: flex;
+flex-wrap: wrap;
+gap: 5px;
+}
+
+.ans-btn {
+padding: 7px 10px;
+border: 1px solid var(–border);
+background: var(–surface2);
+color: var(–text);
+border-radius: 6px;
+font-family: ui-monospace, ‘SF Mono’, Menlo, monospace;
+font-size: 12px;
+cursor: pointer;
+transition: all 0.15s;
+min-width: 40px;
+text-align: center;
+}
+.ans-btn:active { transform: scale(0.95); }
+.ans-btn.selected { border-color: var(–accent); color: var(–accent); background: rgba(212,168,71,0.1); }
+.ans-btn.correct { border-color: var(–accent2); color: var(–accent2); background: rgba(123,158,107,0.15); }
+.ans-btn.wrong { border-color: var(–red); color: var(–red); background: rgba(192,84,74,0.12); }
+
+.action-row {
+display: flex;
+gap: 10px;
+}
+
+.btn-check {
+flex: 1;
+padding: 13px;
+background: var(–accent);
+color: #0e0c06;
+border: none;
+border-radius: 8px;
+font-family: Georgia, ‘Times New Roman’, serif;
+font-size: 15px;
+font-weight: 700;
+cursor: pointer;
+transition: all 0.15s;
+letter-spacing: 0.02em;
+}
+.btn-check:active { transform: scale(0.97); }
+.btn-check:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-next {
+padding: 13px 20px;
+background: var(–surface2);
+color: var(–text);
+border: 1px solid var(–border);
+border-radius: 8px;
+font-family: ui-monospace, ‘SF Mono’, Menlo, monospace;
+font-size: 13px;
+cursor: pointer;
+transition: all 0.15s;
+}
+.btn-next:active { transform: scale(0.97); }
+
+.feedback {
+text-align: center;
+padding: 8px;
+border-radius: 6px;
+font-size: 13px;
+margin-bottom: 10px;
+font-weight: 500;
+display: none;
+}
+.feedback.correct { background: rgba(123,158,107,0.15); color: var(–accent2); display: block; }
+.feedback.wrong { background: rgba(192,84,74,0.1); color: var(–red); display: block; }
+
+/* Mode switcher */
+.mode-switcher {
+display: flex;
+border-bottom: 1px solid var(–border);
+background: var(–surface);
+}
+.mode-btn {
+flex: 1;
+padding: 10px;
+border: none;
+background: transparent;
+color: var(–muted);
+font-family: ui-monospace, ‘SF Mono’, Menlo, monospace;
+font-size: 11px;
+letter-spacing: 0.08em;
+text-transform: uppercase;
+cursor: pointer;
+border-bottom: 2px solid transparent;
+transition: all 0.2s;
+}
+.mode-btn.active {
+color: var(–accent);
+border-bottom-color: var(–accent);
+}
+
+/* Place mode prompt */
+.place-prompt {
+display: none;
+text-align: center;
+padding: 14px 18px 10px;
+background: var(–surface);
+border-bottom: 1px solid var(–border);
+}
+.place-prompt.visible { display: block; }
+.place-chord-name {
+font-family: Georgia, ‘Times New Roman’, serif;
+font-size: 28px;
+font-weight: 900;
+color: var(–accent);
+letter-spacing: -0.5px;
+}
+.place-chord-inv {
+font-size: 11px;
+color: var(–muted);
+letter-spacing: 0.1em;
+text-transform: uppercase;
+margin-top: 2px;
+}
+.place-dot-count {
+font-size: 11px;
+color: var(–muted);
+margin-top: 6px;
+letter-spacing: 0.04em;
+}
+.place-dot-count span { color: var(–accent); font-weight: 600; }
+
+/* Placement dot (user-placed) */
+.place-dot {
+width: 30px; height: 30px;
+border-radius: 50%;
+background: var(–accent);
+opacity: 0.85;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 10px;
+font-weight: 500;
+color: #1a1200;
+z-index: 3;
+position: relative;
+box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+animation: popIn 0.2s cubic-bezier(0.34,1.56,0.64,1) both;
+cursor: pointer;
+}
+.place-dot.correct-pos { background: var(–accent2) !important; opacity: 1; }
+.place-dot.wrong-pos   { background: var(–red)    !important; opacity: 1; }
+
+/* Reveal dot after check */
+.reveal-dot {
+width: 30px; height: 30px;
+border-radius: 50%;
+border: 2px dashed var(–accent2);
+opacity: 0.7;
+z-index: 2;
+position: relative;
+pointer-events: none;
+}
+
+/* Make fret cells tappable in place mode */
+body.place-mode .fret-cell { cursor: pointer; }
+body.place-mode .fret-cell:active { background: rgba(212,168,71,0.08); }
+
+.scroll-hint {
+text-align: center;
+font-size: 10px;
+color: var(–muted);
+padding: 4px;
+letter-spacing: 0.06em;
+}
+</style>
+
+</head>
+<body>
+
+<header>
+  <div class="title">Triad<span>.</span>Quiz</div>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <div class="score-badge">
+      <strong id="scoreDisplay">0 / 0</strong>
+      correct
+    </div>
+    <button class="settings-btn" id="settingsBtn" aria-label="Settings">⚙</button>
+  </div>
+</header>
+
+<!-- Settings overlay -->
+
+<div class="settings-overlay" id="settingsOverlay"></div>
+<div class="settings-sheet" id="settingsSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Settings</div>
+
+  <div class="sheet-section">
+    <div class="sheet-section-label">Chord types</div>
+    <div class="chord-pills">
+      <div class="chord-pill active" data-chord="maj">maj</div>
+      <div class="chord-pill active" data-chord="min">min</div>
+      <div class="chord-pill" data-chord="dim">dim</div>
+      <div class="chord-pill" data-chord="aug">aug</div>
+    </div>
+  </div>
+
+  <div class="sheet-section">
+    <div class="sheet-section-label">Display</div>
+    <div class="sheet-row">
+      <div>
+        <div class="sheet-row-label">Show intervals</div>
+        <div class="sheet-row-sub">Show R, ♭3, 5 etc. on dots</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="showLabels" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="sheet-row">
+      <div>
+        <div class="sheet-row-label">Light mode</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="lightMode">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+</div>
+
+<div class="mode-switcher">
+  <button class="mode-btn active" id="modeIdentify" onclick="setMode('identify')">🎸 Identify</button>
+  <button class="mode-btn" id="modePlaceIt" onclick="setMode('place')">🎯 Place It</button>
+</div>
+
+<div class="place-prompt" id="placePrompt">
+  <div class="place-chord-name" id="placeChordName">—</div>
+  <div class="place-chord-inv" id="placeChordInv">— inversion</div>
+  <div class="place-dot-count" id="dotCountWrap">Place <span id="dotCountLeft">3</span> dots on a valid voicing</div>
+  <div class="toggle-row" style="border:none; padding: 8px 0 0; background:transparent; justify-content:center; gap:8px;">
+    <span style="font-size:11px; color:var(--muted); letter-spacing:0.06em; text-transform:uppercase;">Place all voicings</span>
+    <label class="toggle-switch">
+      <input type="checkbox" id="placeAllMode">
+      <span class="slider"></span>
+    </label>
+    <span class="label-hint" id="placeAllHint" style="font-size:11px;">OFF</span>
+  </div>
+</div>
+
+<div class="fretboard-wrap">
+  <div class="fretboard-container">
+    <div class="fret-markers" id="fretMarkers"></div>
+    <div class="fretboard" id="fretboard"></div>
+    <div class="scroll-hint">← scroll to see full fretboard →</div>
+  </div>
+</div>
+
+<div class="quiz-panel">
+  <div class="feedback" id="feedback"></div>
+
+  <div class="question-label" id="questionLabel">What chord and inversion is this?</div>
+
+  <!-- Identify mode panels -->
+
+  <div id="identifyPanel">
+  <div class="answer-grid">
+    <div class="answer-section">
+      <label>Chord</label>
+      <div class="btn-group" id="chordBtns"></div>
+    </div>
+    <div class="answer-section">
+      <label>Inversion</label>
+      <div class="btn-group" id="inversionBtns"></div>
+    </div>
+  </div>
+  </div>
+
+  <div class="action-row">
+    <button class="btn-check" id="checkBtn" disabled>Check</button>
+    <button class="btn-next" id="nextBtn">Next →</button>
+  </div>
+
+</div>
+
+<script>
+// ── Music theory data ───────────────────────────────────────────────
+const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const NOTE_ALT = {'C#':'Db','D#':'Eb','F#':'Gb','G#':'Ab','A#':'Bb'};
+
+// Standard tuning, string 0 = high e
+const OPEN = [4, 11, 7, 2, 9, 4]; // e B G D A E (MIDI mod 12)
+const STRING_NAMES = ['e','B','G','D','A','E'];
+
+// Triad intervals: [root, third, fifth] semitones
+const CHORD_TYPES = {
+  'maj': [0, 4, 7],
+  'min': [0, 3, 7],
+  'dim': [0, 3, 6],
+  'aug': [0, 4, 8],
+};
+
+const ROOTS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const ROOT_DISPLAY = {'C#':'C#/Db','D#':'D#/Eb','F#':'F#/Gb','G#':'G#/Ab','A#':'A#/Bb'};
+
+const INVERSIONS = ['Root', '1st', '2nd'];
+const INV_BASS = { 'Root': 0, '1st': 1, '2nd': 2 }; // which chord tone is lowest
+
+// ── Fretboard note lookup ────────────────────────────────────────────
+// Returns note (0-11) at string s, fret f
+function noteAt(s, f) {
+  return (OPEN[s] + f) % 12;
+}
+
+// ── Triad shape generation ──────────────────────────────────────────
+// Find valid 3-string triad voicings (adjacent or skip strings)
+// Returns [{string, fret, interval}] where interval ∈ 0,1,2 (root/3rd/5th)
+function findTriads(rootNote, chordType, inversion) {
+  const intervals = CHORD_TYPES[chordType];
+  // chord tones in absolute pitch (mod 12)
+  const tones = intervals.map(i => (rootNote + i) % 12);
+  
+  // For the given inversion, the bass note index
+  const bassIdx = INV_BASS[inversion];
+  
+  const results = [];
+  
+  // Try all string groups of 3 consecutive strings
+  for (let topStr = 0; topStr <= 3; topStr++) {
+    const strings = [topStr, topStr+1, topStr+2];
+    
+    // Try all fret positions 1-15
+    for (let bassFret = 1; bassFret <= 13; bassFret++) {
+      // We'll try assigning each tone to each string
+      // The bass (lowest pitched = highest string index) must be bassIdx tone
+      // strings[2] = lowest (bass), strings[1] = mid, strings[0] = top
+      
+      const bassStringIdx = strings[2];
+      const midStringIdx = strings[1];
+      const topStringIdx = strings[0];
+      
+      // The bass string should play the inversion bass tone
+      const bassTone = tones[bassIdx];
+      
+      // Find fret on bassString that gives bassTone
+      for (let bf = 1; bf <= 15; bf++) {
+        if (noteAt(bassStringIdx, bf) !== bassTone) continue;
+        
+        // The other two tones (in order): remaining tones
+        const remaining = [0,1,2].filter(i => i !== bassIdx);
+        // Try both arrangements on mid and top strings
+        const arrangements = [
+          [remaining[0], remaining[1]],
+          [remaining[1], remaining[0]]
+        ];
+        
+        for (const [midRole, topRole] of arrangements) {
+          const midTone = tones[midRole];
+          const topTone = tones[topRole];
+          
+          // Find frets (prefer close positions)
+          for (let mf = 1; mf <= 15; mf++) {
+            if (noteAt(midStringIdx, mf) !== midTone) continue;
+            for (let tf = 1; tf <= 15; tf++) {
+              if (noteAt(topStringIdx, tf) !== topTone) continue;
+              
+              const frets = [tf, mf, bf];
+              const span = Math.max(...frets) - Math.min(...frets);
+              
+              if (span <= 4) { // playable span
+                results.push({
+                  notes: [
+                    { string: topStringIdx, fret: tf, role: topRole },
+                    { string: midStringIdx, fret: mf, role: midRole },
+                    { string: bassStringIdx, fret: bf, role: bassIdx }
+                  ],
+                  span,
+                  minFret: Math.min(...frets)
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  return results;
+}
+
+// ── Quiz state ──────────────────────────────────────────────────────
+let currentChord = null;
+let currentRoot = null;
+let currentType = null;
+let currentInversion = null;
+let selectedChord = null;
+let selectedInversion = null;
+let checked = false;
+let score = 0;
+let total = 0;
+
+// ── Mode ────────────────────────────────────────────────────────────
+let appMode = 'identify'; // 'identify' | 'place'
+
+function setMode(mode) {
+  appMode = mode;
+  document.getElementById('modeIdentify').classList.toggle('active', mode === 'identify');
+  document.getElementById('modePlaceIt').classList.toggle('active', mode === 'place');
+  document.getElementById('identifyPanel').style.display = mode === 'identify' ? '' : 'none';
+  document.getElementById('placePrompt').classList.toggle('visible', mode === 'place');
+  document.getElementById('questionLabel').style.display = mode === 'identify' ? '' : 'none';
+  document.body.classList.toggle('place-mode', mode === 'place');
+  clearDots();
+  placedDots = [];
+  checked = false;
+  document.getElementById('feedback').className = 'feedback';
+  generateQuestion();
+}
+
+// ── Place-it state ──────────────────────────────────────────────────
+let placedDots = []; // [{string, fret, el}]
+let placeAllConfirmed = new Set(); // set of shape keys already confirmed correct
+let placeAllShapes = []; // all valid shapes for current chord (place-all mode)
+const MAX_DOTS = 3;
+
+function getPlaceAll() { return document.getElementById('placeAllMode').checked; }
+
+function onFretCellClick(s, f) {
+  if (appMode !== 'place') return;
+  if (checked) return;
+
+  // Toggle: remove if already placed here
+  const existing = placedDots.findIndex(d => d.string === s && d.fret === f);
+  if (existing !== -1) {
+    placedDots[existing].el.remove();
+    placedDots.splice(existing, 1);
+    updateDotCount();
+    document.getElementById('checkBtn').disabled = true;
+    return;
+  }
+
+  // In single mode: max 3, replace oldest
+  if (!getPlaceAll() && placedDots.length >= MAX_DOTS) {
+    placedDots[0].el.remove();
+    placedDots.shift();
+  }
+
+  const cell = document.getElementById(`cell-${s}-${f}`);
+  const dot = document.createElement('div');
+  dot.className = 'place-dot';
+  cell.appendChild(dot);
+  placedDots.push({ string: s, fret: f, el: dot });
+  updateDotCount();
+
+  // Enable check when we have a multiple of 3
+  const count = placedDots.length;
+  document.getElementById('checkBtn').disabled = !(count > 0 && count % MAX_DOTS === 0);
+}
+
+function updateDotCount() {
+  const placeAll = getPlaceAll();
+  const count = placedDots.length;
+  if (placeAll) {
+    const groupsPlaced = Math.floor(count / MAX_DOTS);
+    document.getElementById('dotCountLeft').textContent =
+      `${groupsPlaced} / 4 string groups placed`;
+  } else {
+    const left = MAX_DOTS - count;
+    document.getElementById('dotCountLeft').textContent = left > 0 ? left : '✓ ready';
+  }
+}
+
+function checkPlacement() {
+  if (getPlaceAll()) {
+    checkPlacementAll();
+  } else {
+    checkPlacementSingle();
+  }
+}
+
+function checkPlacementSingle() {
+  if (placedDots.length !== MAX_DOTS) return;
+  checked = true;
+  total++;
+
+  const validShapes = findTriads(currentRoot, currentType, currentInversion);
+  const placedSet = placedDots.map(d => `${d.string}-${d.fret}`).sort().join(',');
+
+  let matched = false;
+  for (const shape of validShapes) {
+    const shapeSet = shape.notes.map(n => `${n.string}-${n.fret}`).sort().join(',');
+    if (shapeSet === placedSet) { matched = true; break; }
+  }
+
+  if (matched) {
+    score++;
+    placedDots.forEach(d => d.el.classList.add('correct-pos'));
+  } else {
+    placedDots.forEach(d => d.el.classList.add('wrong-pos'));
+    if (validShapes.length > 0) revealShape(validShapes[0], placedDots);
+  }
+
+  document.getElementById('scoreDisplay').textContent = `${score} / ${total}`;
+  const fb = document.getElementById('feedback');
+  const chordLabel = NOTES[currentRoot] + (currentType === 'maj' ? '' : currentType === 'min' ? 'm' : currentType);
+  if (matched) {
+    fb.className = 'feedback correct';
+    fb.textContent = `✓ Correct! ${chordLabel} — ${currentInversion} inversion`;
+  } else {
+    fb.className = 'feedback wrong';
+    fb.textContent = `✗ Not quite. Dashed circles show a valid voicing.`;
+  }
+  document.getElementById('checkBtn').disabled = true;
+}
+
+// Returns one best voicing per string group (top string of group = 0,1,2,3)
+function getOnePerStringGroup(rootIdx, type, inversion) {
+  const allShapes = findTriads(rootIdx, type, inversion);
+  const best = {}; // keyed by topString (0-3)
+  for (const shape of allShapes) {
+    const strings = shape.notes.map(n => n.string);
+    const topStr = Math.min(...strings);
+    if (topStr > 3) continue; // only 4 groups
+    if (!best[topStr] || shape.span < best[topStr].span) {
+      best[topStr] = shape;
+    }
+  }
+  return Object.values(best); // up to 4 shapes
+}
+
+function checkPlacementAll() {
+  if (placedDots.length === 0 || placedDots.length % MAX_DOTS !== 0) return;
+  checked = true;
+  total++;
+
+  const targetShapes = placeAllShapes; // one per string group
+  // Build groups of 3 from placed dots in placement order
+  const groups = [];
+  for (let i = 0; i < placedDots.length; i += MAX_DOTS) {
+    groups.push(placedDots.slice(i, i + MAX_DOTS));
+  }
+
+  const matchedShapeKeys = new Set();
+  const matchedGroupIdxs = new Set();
+
+  for (let gi = 0; gi < groups.length; gi++) {
+    const groupSet = groups[gi].map(d => `${d.string}-${d.fret}`).sort().join(',');
+    for (const shape of targetShapes) {
+      const shapeSet = shape.notes.map(n => `${n.string}-${n.fret}`).sort().join(',');
+      if (shapeSet === groupSet && !matchedShapeKeys.has(shapeSet)) {
+        matchedShapeKeys.add(shapeSet);
+        matchedGroupIdxs.add(gi);
+        break;
+      }
+    }
+  }
+
+  // Colour dots per group
+  for (let gi = 0; gi < groups.length; gi++) {
+    const cls = matchedGroupIdxs.has(gi) ? 'correct-pos' : 'wrong-pos';
+    groups[gi].forEach(d => d.el.classList.add(cls));
+  }
+
+  // Reveal any target shapes not matched
+  for (const shape of targetShapes) {
+    const shapeSet = shape.notes.map(n => `${n.string}-${n.fret}`).sort().join(',');
+    if (!matchedShapeKeys.has(shapeSet)) {
+      revealShape(shape, placedDots);
+    }
+  }
+
+  const allFound = matchedShapeKeys.size === targetShapes.length && groups.length === targetShapes.length;
+  if (allFound) score++;
+  document.getElementById('scoreDisplay').textContent = `${score} / ${total}`;
+
+  const chordLabel = NOTES[currentRoot] + (currentType === 'maj' ? '' : currentType === 'min' ? 'm' : currentType);
+  const fb = document.getElementById('feedback');
+  if (allFound) {
+    fb.className = 'feedback correct';
+    fb.textContent = `✓ All 4 string groups found! ${chordLabel} — ${currentInversion} inversion`;
+  } else {
+    fb.className = 'feedback wrong';
+    fb.textContent = `✗ Found ${matchedShapeKeys.size} / ${targetShapes.length} string groups. Dashed = missed.`;
+  }
+  document.getElementById('checkBtn').disabled = true;
+}
+
+function revealShape(shape, excludeDots) {
+  shape.notes.forEach(({ string, fret }) => {
+    const alreadyPlaced = excludeDots.some(d => d.string === string && d.fret === fret);
+    if (!alreadyPlaced) {
+      const cell = document.getElementById(`cell-${string}-${fret}`);
+      if (cell) {
+        const reveal = document.createElement('div');
+        reveal.className = 'reveal-dot';
+        cell.appendChild(reveal);
+      }
+    }
+  });
+}
+
+// ── Build fretboard UI ──────────────────────────────────────────────
+const FRET_COUNT = 15;
+const INLAY_FRETS    = new Set([3,5,7,9,12,15]);
+const DOUBLE_DOT_FRETS = new Set([12]);
+
+function buildFretboard() {
+  // Marker dots row above fretboard
+  const markerRow = document.getElementById('fretMarkers');
+  markerRow.innerHTML = '';
+  for (let f = 1; f <= FRET_COUNT; f++) {
+    const cell = document.createElement('div');
+    cell.className = 'fret-marker-cell';
+    if (INLAY_FRETS.has(f)) {
+      const dot = document.createElement('div');
+      dot.className = 'fret-marker-dot';
+      cell.appendChild(dot);
+      if (DOUBLE_DOT_FRETS.has(f)) {
+        const dot2 = document.createElement('div');
+        dot2.className = 'fret-marker-dot';
+        cell.appendChild(dot2);
+      }
+    }
+    markerRow.appendChild(cell);
+  }
+
+  const fb = document.getElementById('fretboard');
+  fb.innerHTML = '';
+
+  for (let s = 0; s < 6; s++) {
+    const row = document.createElement('div');
+    row.className = 'string-row';
+    row.id = `string-${s}`;
+
+    const lbl = document.createElement('div');
+    lbl.className = 'string-label';
+    lbl.textContent = STRING_NAMES[s];
+    row.appendChild(lbl);
+
+    const frets = document.createElement('div');
+    frets.className = 'frets';
+
+    for (let f = 1; f <= FRET_COUNT; f++) {
+      const cell = document.createElement('div');
+      cell.className = 'fret-cell';
+      cell.id = `cell-${s}-${f}`;
+      cell.addEventListener('click', () => onFretCellClick(s, f));
+
+      // Inlay on string 3 (D)
+      if (s === 3 && INLAY_FRETS.has(f)) {
+        const inlay = document.createElement('div');
+        inlay.className = 'fret-inlay';
+        cell.appendChild(inlay);
+      }
+
+      frets.appendChild(cell);
+    }
+
+    row.appendChild(frets);
+    fb.appendChild(row);
+  }
+}
+
+function clearDots() {
+  document.querySelectorAll('.note-dot, .place-dot, .reveal-dot').forEach(d => d.remove());
+}
+
+function getRoleLabels(chordType) {
+  // Index 0=root, 1=third, 2=fifth
+  switch (chordType) {
+    case 'maj': return ['R', '3',  '5' ];
+    case 'min': return ['R', '♭3', '5' ];
+    case 'dim': return ['R', '♭3', '♭5'];
+    case 'aug': return ['R', '3',  '♯5'];
+    default:    return ['R', '3',  '5' ];
+  }
+}
+
+function placeDots(notes, showLabels) {
+  clearDots();
+  const roleLabels = getRoleLabels(currentType);
+  const roleClass = ['dot-root', 'dot-third', 'dot-fifth'];
+
+  notes.forEach(({ string, fret, role }) => {
+    const cell = document.getElementById(`cell-${string}-${fret}`);
+    if (!cell) return;
+    const dot = document.createElement('div');
+    dot.className = `note-dot ${roleClass[role]}`;
+    dot.textContent = showLabels ? roleLabels[role] : '';
+    cell.appendChild(dot);
+  });
+}
+
+// ── Generate question ───────────────────────────────────────────────
+function generateQuestion() {
+  const rootIdx = Math.floor(Math.random() * 12);
+  const allTypes = Object.keys(CHORD_TYPES);
+  const types = getEnabledTypes().filter(t => allTypes.includes(t));
+  const type = types[Math.floor(Math.random() * types.length)];
+  const inversion = INVERSIONS[Math.floor(Math.random() * 3)];
+  
+  const shapes = findTriads(rootIdx, type, inversion);
+  if (shapes.length === 0) {
+    // Retry
+    generateQuestion();
+    return;
+  }
+  
+  // Pick a random shape
+  const shape = shapes[Math.floor(Math.random() * shapes.length)];
+  
+  currentRoot = rootIdx;
+  currentType = type;
+  currentInversion = inversion;
+  currentChord = { rootIdx, type, inversion, notes: shape.notes };
+
+  if (appMode === 'place') {
+    clearDots();
+    placedDots = [];
+    placeAllShapes = getOnePerStringGroup(rootIdx, type, inversion);
+    const chordLabel = NOTES[rootIdx] + (type === 'maj' ? '' : type === 'min' ? 'm' : type);
+    document.getElementById('placeChordName').textContent = chordLabel;
+    document.getElementById('placeChordInv').textContent = inversion + ' inversion';
+    updateDotCount();
+  } else {
+    const showLabels = document.getElementById('showLabels').checked;
+    placeDots(shape.notes, showLabels);
+  }
+
+  // Scroll fretboard to show the shape
+  const minFret = Math.min(...shape.notes.map(n => n.fret));
+  const fretboardWrap = document.querySelector('.fretboard-wrap');
+  const cellWidth = fretboardWrap.scrollWidth / FRET_COUNT;
+  const targetScroll = Math.max(0, (minFret - 2) * cellWidth);
+  fretboardWrap.scrollTo({ left: targetScroll, behavior: 'smooth' });
+  
+  // Reset answers
+  selectedChord = null;
+  selectedInversion = null;
+  checked = false;
+  
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('checkBtn').disabled = true;
+
+  document.querySelectorAll('.ans-btn').forEach(b => {
+    b.classList.remove('selected','correct','wrong');
+    b.disabled = false;
+  });
+}
+
+// ── Build answer buttons ────────────────────────────────────────────
+function buildAnswerButtons() {
+  // Chord buttons: root + quality
+  const chordBtns = document.getElementById('chordBtns');
+  chordBtns.innerHTML = '';
+  
+  // All unique chord names
+  const chordNames = [];
+  ROOTS.forEach(r => {
+    Object.keys(CHORD_TYPES).forEach(t => {
+      chordNames.push({ root: r, type: t });
+    });
+  });
+  
+  // Show 8 chord options: correct + 7 random distractors
+  // We'll build the full list and pick at render time
+  // Actually let's just show all 12 roots × 4 types = 48; too many.
+  // Better: show just the roots (12) and type (4) separately
+  
+  // Root buttons
+  const rootWrap = document.createElement('div');
+  rootWrap.className = 'btn-group';
+  rootWrap.style.marginBottom = '6px';
+  
+  ROOTS.forEach(r => {
+    const b = document.createElement('button');
+    b.className = 'ans-btn';
+    b.dataset.value = r;
+    b.dataset.kind = 'root';
+    b.textContent = r;
+    b.addEventListener('click', () => selectAnswer(b, 'root', r));
+    rootWrap.appendChild(b);
+  });
+  
+  // Type buttons
+  const typeWrap = document.createElement('div');
+  typeWrap.className = 'btn-group';
+  
+  Object.keys(CHORD_TYPES).forEach(t => {
+    const b = document.createElement('button');
+    b.className = 'ans-btn';
+    b.dataset.value = t;
+    b.dataset.kind = 'type';
+    if (t === 'dim' || t === 'aug') b.dataset.extended = 'true';
+    const labels = { maj: 'maj', min: 'm', dim: 'dim', aug: 'aug' };
+    b.textContent = labels[t];
+    b.addEventListener('click', () => selectAnswer(b, 'type', t));
+    typeWrap.appendChild(b);
+  });
+  
+  chordBtns.appendChild(rootWrap);
+  chordBtns.appendChild(typeWrap);
+
+  // Inversion buttons
+  const invBtns = document.getElementById('inversionBtns');
+  invBtns.innerHTML = '';
+  INVERSIONS.forEach(inv => {
+    const b = document.createElement('button');
+    b.className = 'ans-btn';
+    b.dataset.value = inv;
+    b.dataset.kind = 'inversion';
+    b.textContent = inv;
+    b.addEventListener('click', () => selectAnswer(b, 'inversion', inv));
+    invBtns.appendChild(b);
+  });
+}
+
+let selectedRoot = null;
+let selectedType = null;
+
+function selectAnswer(btn, kind, value) {
+  if (checked) return;
+  
+  if (kind === 'root') {
+    document.querySelectorAll('[data-kind="root"]').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedRoot = value;
+  } else if (kind === 'type') {
+    document.querySelectorAll('[data-kind="type"]').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedType = value;
+  } else if (kind === 'inversion') {
+    document.querySelectorAll('[data-kind="inversion"]').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedInversion = value;
+  }
+  
+  const checkBtn = document.getElementById('checkBtn');
+  checkBtn.disabled = !(selectedRoot && selectedType && selectedInversion);
+}
+
+function checkAnswer() {
+  if (!selectedRoot || !selectedType || !selectedInversion) return;
+  checked = true;
+  total++;
+  
+  const correctRoot = NOTES[currentRoot];
+  const correctType = currentType;
+  const correctInversion = currentInversion;
+  
+  const rootCorrect = selectedRoot === correctRoot;
+  const typeCorrect = selectedType === correctType;
+  const invCorrect = selectedInversion === correctInversion;
+  const allCorrect = rootCorrect && typeCorrect && invCorrect;
+  
+  if (allCorrect) score++;
+  document.getElementById('scoreDisplay').textContent = `${score} / ${total}`;
+  
+  // Highlight root buttons
+  document.querySelectorAll('[data-kind="root"]').forEach(b => {
+    if (b.dataset.value === correctRoot) b.classList.add('correct');
+    else if (b.dataset.value === selectedRoot && !rootCorrect) b.classList.add('wrong');
+  });
+  
+  // Highlight type buttons
+  document.querySelectorAll('[data-kind="type"]').forEach(b => {
+    if (b.dataset.value === correctType) b.classList.add('correct');
+    else if (b.dataset.value === selectedType && !typeCorrect) b.classList.add('wrong');
+  });
+  
+  // Highlight inversion buttons
+  document.querySelectorAll('[data-kind="inversion"]').forEach(b => {
+    if (b.dataset.value === correctInversion) b.classList.add('correct');
+    else if (b.dataset.value === selectedInversion && !invCorrect) b.classList.add('wrong');
+  });
+  
+  // Always reveal labels after checking
+  const showLabels = document.getElementById('showLabels').checked;
+  placeDots(currentChord.notes, true); // always show after check
+  
+  // Feedback
+  const typeLabels = { maj: 'Major', min: 'Minor', dim: 'Diminished', aug: 'Augmented' };
+  const fb = document.getElementById('feedback');
+  if (allCorrect) {
+    fb.className = 'feedback correct';
+    fb.textContent = `✓ Correct! ${correctRoot}${correctType === 'maj' ? '' : correctType === 'min' ? 'm' : correctType} — ${correctInversion} inversion`;
+  } else {
+    fb.className = 'feedback wrong';
+    fb.textContent = `✗ It was ${correctRoot}${correctType === 'maj' ? '' : correctType === 'min' ? 'm' : correctType} — ${correctInversion} inversion`;
+  }
+  
+  document.getElementById('checkBtn').disabled = true;
+  document.querySelectorAll('.ans-btn').forEach(b => b.disabled = true);
+}
+
+// ── Chord type helpers (global) ───────────────────────────────────────
+function getEnabledTypes() {
+  return [...document.querySelectorAll('.chord-pill.active')].map(p => p.dataset.chord);
+}
+
+function applyTypeVisibility() {
+  const enabled = getEnabledTypes();
+  document.querySelectorAll('[data-kind="type"]').forEach(b => {
+    b.style.display = enabled.includes(b.dataset.value) ? '' : 'none';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+
+// Settings sheet
+const settingsBtn     = document.getElementById('settingsBtn');
+const settingsSheet   = document.getElementById('settingsSheet');
+const settingsOverlay = document.getElementById('settingsOverlay');
+
+function openSettings() {
+  settingsSheet.classList.add('open');
+  settingsOverlay.classList.add('open');
+}
+function closeSettings() {
+  settingsSheet.classList.remove('open');
+  settingsOverlay.classList.remove('open');
+}
+settingsBtn.addEventListener('click', openSettings);
+settingsOverlay.addEventListener('click', closeSettings);
+
+document.querySelectorAll('.chord-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    const enabled = getEnabledTypes();
+    if (pill.classList.contains('active') && enabled.length === 1) return;
+    pill.classList.toggle('active');
+    applyTypeVisibility();
+    if (currentType && !getEnabledTypes().includes(currentType)) {
+      selectedRoot = null; selectedType = null; selectedInversion = null;
+      placedDots = []; clearDots();
+      generateQuestion();
+    }
+  });
+});
+
+document.getElementById('showLabels').addEventListener('change', function() {
+  if (currentChord && !checked) placeDots(currentChord.notes, this.checked);
+});
+
+document.getElementById('lightMode').addEventListener('change', function() {
+  document.body.classList.toggle('light', this.checked);
+});
+
+document.getElementById('placeAllMode').addEventListener('change', function() {
+  document.getElementById('placeAllHint').textContent = this.checked ? 'ON' : 'OFF';
+  clearDots();
+  placedDots = [];
+  checked = false;
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('checkBtn').disabled = true;
+  if (this.checked && currentRoot !== null) {
+    placeAllShapes = getOnePerStringGroup(currentRoot, currentType, currentInversion);
+  }
+  updateDotCount();
+});
+
+buildFretboard();
+buildAnswerButtons();
+applyTypeVisibility();
+document.getElementById('identifyPanel').style.display = '';
+document.getElementById('placePrompt').classList.remove('visible');
+
+document.getElementById('checkBtn').addEventListener('click', () => {
+  if (appMode === 'place') checkPlacement();
+  else checkAnswer();
+});
+document.getElementById('nextBtn').addEventListener('click', () => {
+  selectedRoot = null;
+  selectedType = null;
+  selectedInversion = null;
+  placedDots = [];
+  clearDots();
+  generateQuestion();
+});
+
+generateQuestion();
+
+}); // end DOMContentLoaded
+</script>
+
+</body>
+</html>
